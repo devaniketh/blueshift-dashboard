@@ -111,7 +111,7 @@ use anchor_spl::token_interface::{
     self, token_member_initialize, TokenAccount, TokenMemberInitialize,
 };
 
-pub fn initialize_group_member(ctx: Context<InitializeMember>) -> Result<()> {
+pub fn initialize_member(ctx: Context<InitializeMember>) -> Result<()> {
     // Add 4 extra bytes for size of MetadataExtension (2 bytes for the discriminator, 2 bytes for length)
     let token_group_len =
         ExtensionType::try_calculate_account_len::<PodMint>(&[ExtensionType::TokenGroupMember])?;
