@@ -9,10 +9,7 @@ Dengan bantuan [Orion](https://x.com/BasedOrion_), kami membuat serangkaian help
 Untuk alasan ini, kita dapat menggunakan *Instruksi Introspeksi* di Pinocchio tanpa menginstal crate eksternal dan dapat mengakses semua informasi yang kita butuhkan dengan mengimpor fungsi-fungsi ini:
 
 ```rust
-use pinocchio::sysvars::instructions::{
-    load_current_index_checked, 
-    load_instruction_at_checked
-}; 
+use pinocchio::sysvars::instructions::Instructions;
 ```
 
 <ArticleSection name="Cara menggunakan Introspeksi" id="how-to-use-introspection" level="h2" />
@@ -22,14 +19,15 @@ Seperti yang disebutkan sebelumnya, Instruksi Introspeksi hanya mendeserialkan d
 Kita mulai dengan memeriksa indeks saat ini. Kita dapat melakukan ini dengan menggunakan fungsi `load_current_index_checked`, seperti ini:
 
 ```rust
-let index = load_current_index_checked(&self.accounts.sysvar_instructions)?;
+let instruction_sysvar = unsafe { Instructions::new_unchecked(&self.accounts.sysvar_instructions.try_borrow_data()?) };
+let index = instruction_sysvar.load_current_index();
 ```
 
 Setelah ini, kita dapat memeriksa instruksi pada indeks relatif menggunakan `load_instruction_at_checked`. Kali ini, kita akan memeriksa instruksi yang langsung mengikuti instruksi yang melakukan introspeksi, seperti ini:
 
 ```rust
 // We load the next instruction, which is the one we want to check for the correct input.
-let instruction = load_instruction_at_checked(index as usize + 1, &self.accounts.sysvar_instructions)?;
+let instruction = instruction_sysvar.load_instruction_at(index as usize + 1)?;
 ```
 
 Sebelum melanjutkan ke langkah berikutnya, kita harus bertanya pada diri sendiri informasi apa yang penting untuk mencegah serangan berbahaya.

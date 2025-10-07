@@ -10,10 +10,7 @@ implementation but made the `Instruction` sysvar — one of the most expensive s
 For this reason, we can use *Instruction Introspection* in Pinocchio without installing any external crates and can access all the information we need by importing these functions:
 
 ```rust
-use pinocchio::sysvars::instructions::{
-    load_current_index_checked, 
-    load_instruction_at_checked
-}; 
+use pinocchio::sysvars::instructions::Instructions;
 ```
 
 <ArticleSection name="How to use Introspection" id="how-to-use-introspection" level="h2" />
@@ -23,14 +20,15 @@ As mentioned previously, Instruction Introspection simply deserializes the data 
 We start by checking the current index. We can do this by using the `load_current_index_checked` function, like so:
 
 ```rust
-let index = load_current_index_checked(&self.accounts.sysvar_instructions)?;
+let instruction_sysvar = unsafe { Instructions::new_unchecked(&self.accounts.sysvar_instructions.try_borrow_data()?) };
+let index = instruction_sysvar.load_current_index();
 ```
 
 After this, we can check an instruction at a relative index using `load_instruction_at_checked`. This time, we'll check the instruction immediately following the one performing the introspection, like so:
 
 ```rust
 // We load the next instruction, which is the one we want to check for the correct input.
-let instruction = load_instruction_at_checked(index as usize + 1, &self.accounts.sysvar_instructions)?;
+let instruction = instruction_sysvar.load_instruction_at(index as usize + 1)?;
 ```
 
 Before going to the next step, we should ask ourselves what information is essential to prevent a malicious attack.

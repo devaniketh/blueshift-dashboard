@@ -9,10 +9,7 @@ Mit Hilfe von [Orion](https://x.com/BasedOrion_) haben wir eine Reihe von Hilfsf
 Aus diesem Grund können wir *Instruktions-Introspektion* in Pinocchio verwenden, ohne externe Crates zu installieren, und können auf alle benötigten Informationen zugreifen, indem wir diese Funktionen importieren:
 
 ```rust
-use pinocchio::sysvars::instructions::{
-    load_current_index_checked, 
-    load_instruction_at_checked
-}; 
+use pinocchio::sysvars::instructions::Instructions; 
 ```
 
 <ArticleSection name="Wie man Introspektion verwendet" id="how-to-use-introspection" level="h2" />
@@ -22,14 +19,15 @@ Wie bereits erwähnt, deserialisiert die Instruktions-Introspektion einfach die 
 Wir beginnen mit der Überprüfung des aktuellen Index. Dies können wir mit der Funktion `load_current_index_checked` tun, wie folgt:
 
 ```rust
-let index = load_current_index_checked(&self.accounts.sysvar_instructions)?;
+let instruction_sysvar = unsafe { Instructions::new_unchecked(&self.accounts.sysvar_instructions.try_borrow_data()?) };
+let index = instruction_sysvar.load_current_index();
 ```
 
 Danach können wir eine Instruktion an einem relativen Index mit `load_instruction_at_checked` überprüfen. Diesmal überprüfen wir die Instruktion, die unmittelbar auf diejenige folgt, die die Introspektion durchführt, wie folgt:
 
 ```rust
 // We load the next instruction, which is the one we want to check for the correct input.
-let instruction = load_instruction_at_checked(index as usize + 1, &self.accounts.sysvar_instructions)?;
+let instruction = instruction_sysvar.load_instruction_at(index as usize + 1)?;
 ```
 
 Bevor wir zum nächsten Schritt übergehen, sollten wir uns fragen, welche Informationen wesentlich sind, um einen böswilligen Angriff zu verhindern.

@@ -9,10 +9,7 @@ Pinocchio 使用的类型与 `solana_program` crate 不同。这意味着我们�
 因此，我们可以在 Pinocchio 中使用*指令内省*，无需安装任何外部 crate，并且可以通过导入这些函数访问我们所需的所有信息：
 
 ```rust
-use pinocchio::sysvars::instructions::{
-    load_current_index_checked, 
-    load_instruction_at_checked
-}; 
+use pinocchio::sysvars::instructions::Instructions;
 ```
 
 <ArticleSection name="如何使用内省" id="how-to-use-introspection" level="h2" />
@@ -22,14 +19,15 @@ use pinocchio::sysvars::instructions::{
 我们从检查当前索引开始。可以通过使用 `load_current_index_checked` 函数来实现，如下所示：
 
 ```rust
-let index = load_current_index_checked(&self.accounts.sysvar_instructions)?;
+let instruction_sysvar = unsafe { Instructions::new_unchecked(&self.accounts.sysvar_instructions.try_borrow_data()?) };
+let index = instruction_sysvar.load_current_index();
 ```
 
 之后，我们可以使用 `load_instruction_at_checked` 检查相对索引处的指令。这次，我们将检查紧随执行内省的指令之后的指令，如下所示：
 
 ```rust
 // We load the next instruction, which is the one we want to check for the correct input.
-let instruction = load_instruction_at_checked(index as usize + 1, &self.accounts.sysvar_instructions)?;
+let instruction = instruction_sysvar.load_instruction_at(index as usize + 1)?;
 ```
 
 在进入下一步之前，我们应该问自己哪些信息对于防止恶意攻击是必不可少的。
