@@ -163,6 +163,7 @@
   },
   "marketing_banner": {
     "title": "Erwägen Sie Staking, um zur Verbesserung von Blueshift beizutragen",
+    "mobile": "Erwägen Sie <link>Staking</link>, um zur Verbesserung von Blueshift beizutragen",
     "button": "Staken"
   }
 }

@@ -163,6 +163,7 @@
   },
   "marketing_banner": {
     "title": "考慮進行質押以協助改進 Blueshift",
+    "mobile": "考慮進行<link>質押</link>以協助改進 Blueshift",
     "button": "質押"
   }
 }

@@ -13,6 +13,8 @@ export default function MarketingBanner() {
   const { setMarketingBannerViewed, _hasHydrated, marketingBannerViewed } =
     usePersistentStore();
 
+  const stakingUrl = process.env.NEXT_PUBLIC_STAKING_URL ?? "#";
+
   const [closeHeart, setCloseHeart] = useState(false);
 
   function handleCloseBanner() {
@@ -45,22 +47,24 @@ export default function MarketingBanner() {
               <span className="text-sm font-medium text-brand-primary sm:block hidden">
                 {t("marketing_banner.title")}
               </span>
-              <span className="relative z-10 text-sm font-medium text-brand-primary inline-block sm:hidden max-w-[50%]">
-                Consider{" "}
-                <a
-                  href={process.env.NEXT_PUBLIC_STAKING_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-brand-primary underline"
-                >
-                  staking
-                </a>{" "}
-                to help improve Blueshift
+              <span className="relative z-10 text-sm font-medium text-brand-primary inline-block sm:hidden max-w-[80%]">
+                {t.rich("marketing_banner.mobile", {
+                  link: (chunks) => (
+                    <a
+                      href={stakingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-brand-primary underline"
+                    >
+                      {chunks}
+                    </a>
+                  ),
+                })}
               </span>
             </div>
 
             <a
-              href={process.env.NEXT_PUBLIC_STAKING_URL}
+              href={stakingUrl}
               target="_blank"
               className="hidden sm:block"
             >
