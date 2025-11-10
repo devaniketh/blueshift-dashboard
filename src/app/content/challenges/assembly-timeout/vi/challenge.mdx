@@ -71,7 +71,7 @@ call sol_get_clock_sysvar
 ldxdw r1, [r1+0x0000]
 ```
 
-Việc gọi `sol_get_clock_sysvar` syscall sẽ ghi dữ liệu `Clock` hiện tại vào `r1`.
+Việc gọi `sol_get_clock_sysvar` syscall sẽ ghi dữ liệu `Clock` hiện tại vào địa chỉ ô nhớ được chỉ định trong `r1`.
 
 Bởi vì cấu trúc của Clock là 40 bytes (nó quá lớn cho các thanh ghi chỉ có thể lưu trữ 8 byte mỗi lần), chúng ta sử dụng stack cho việc lưu trữ nhanh chóng, không cần cấp phát và được dọn dẹp tự động.
 

@@ -103,3 +103,141 @@ cargo build-bpf --no-default-features
 ```
 
 Cách tiếp cận này cho phép bạn duy trì một codebase duy nhất có thể được điều chỉnh cho an toàn trogn quá trình phát triển hoặc tốc độ trên production chỉ bằng cách bật/tắt các cờ chức năng.
+
+<ArticleSection name="Các phép toán dịch bit" id="bitwise-operations" level="h2" />
+
+Khi thảo luận về các phép toán hiệu quả, các giá trị boolean là một trong những thứ lãng phí nhất. Hãy xem xét điều này: chúng chiếm 1 byte để đại diện cho chỉ hai giá trị có thể: 0 hoặc 1.
+
+Nếu bạn có nhiều giá trị boolean trong mã của mình, bạn có thể lưu trữ chúng hiệu quả hơn nhiều bằng cách sử dụng thao tác bit. Với các phép toán dịch bit, bạn có thể lưu trữ lên đến 8 giá trị boolean khác nhau trong một byte duy nhất.
+
+### Định nghĩa cờ
+
+Định nghĩa cờ dưới dạng các vị trí bit bằng cách sử dụng các phép dịch trái:
+
+```rust
+const FLAG_ACTIVE: u8 = 1 << 0;     // 0000_0001
+const FLAG_VERIFIED: u8 = 1 << 1;   // 0000_0010  
+const FLAG_PREMIUM: u8 = 1 << 2;    // 0000_0100
+const FLAG_LOCKED: u8 = 1 << 3;     // 0000_1000
+```
+
+Để đặt một cờ, chúng ta có thể đơn giản làm như sau:
+
+```rust
+let mut flags = 0u8;           // flags = 0000_0000
+
+flags |= FLAG_ACTIVE;          // flags = 0000_0001
+flags |= FLAG_VERIFIED;        // flags = 0000_0011
+flags |= FLAG_PREMIUM | FLAG_LOCKED;  // flags = 0000_1111
+```
+
+Phép toán `|` (phép toán OR) là hoàn hảo để "bật" các bit cụ thể mà không ảnh hưởng đến các bit khác vì khi bạn OR với 0, bit gốc được bảo toàn và khi bạn OR với 1, kết quả luôn là 1 (cờ được đặt)
+
+Nếu chúng ta muốn kiểm tra xem một cờ có đang hoạt động hay không, chúng ta có thể làm như sau:
+
+```rust
+let flags = 0b0000_0101u8;  // Có cờ ACTIVE và PREMIUM được đặt
+
+// Kiểm tra xem một cờ đơn lẻ có được đặt hay không
+if flags & FLAG_ACTIVE != 0 {
+    println!("Account is active");
+}
+
+// Kiểm tra nếu nhiều cờ được đặt
+if (flags & (FLAG_ACTIVE | FLAG_PREMIUM)) == (FLAG_ACTIVE | FLAG_PREMIUM) {
+    println!("Account is both active and premium");
+}
+
+// Kiểm tra nếu bất kỳ cờ nào trong số nhiều cờ được đặt
+if flags & (FLAG_VERIFIED | FLAG_PREMIUM) != 0 {
+    println!("Account is either verified or premium (or both)");
+}
+```
+
+Phép toán `&` (phép toán AND) là hoàn hảo để "masking" các bit cụ thể nhằm kiểm tra giá trị của chúng, vì khi bạn AND với 0, kết quả luôn là 0 và khi bạn AND với 1, bit gốc được bảo toàn.
+
+Để xóa hoặc chuyển đổi các cờ, thay vào đó chúng ta có thể làm như sau:
+
+```rust
+let mut flags = 0b0000_1111u8;      // Tất cả các cờ đều được đặt
+
+// Xóa một cờ đơn lẻ
+flags &= !FLAG_ACTIVE;              // flags = 0000_1110
+
+// Xóa nhiều cờ cùng một lúc
+flags &= !(FLAG_VERIFIED | FLAG_PREMIUM);   // flags = 0000_1000
+
+// Chuyển đổi một cờ đơn lẻ
+flags ^= FLAG_ACTIVE;               // flags = 0000_1001 (now has VERIFIED)
+flags ^= FLAG_LOCKED;               // flags = 0000_0001 (LOCKED now cleared)
+
+// Chuyển đổi nhiều cờ cùng một lúc
+flags ^= FLAG_PREMIUM | FLAG_LOCKED;        // flags = 0000_1011
+```
+
+<ArticleSection name="Bộ nhớ trên Solana" id="memory-on-solana" level="h2" />
+
+Máy ảo Solana (SVM) sử dụng kiến trúc bộ nhớ ba tầng, tách biệt rõ ràng giữa bộ nhớ ngăn xếp (biến cục bộ), bộ nhớ heap (cấu trúc động) và không gian tài khoản (lưu trữ bền vững).
+
+Hiểu kiến trúc này là rất quan trọng để viết các chương trình Solana hiệu suất cao.
+
+Các chương trình hoạt động trong các không gian địa chỉ ảo cố định với ánh xạ bộ nhớ có thể dự đoán:
+- **Program Code**: `0x100000000` - Nơi mã byte đã biên dịch của bạn được lưu trữ
+- **Stack Data**: `0x200000000` - Biến cục bộ và khung gọi hàm
+- **Heap Data**: `0x300000000` - Cấp phát động (đắt đỏ!)
+
+Bố cục xác định này cho phép tối ưu hóa mạnh mẽ nhưng cũng tạo ra các ràng buộc nghiêm ngặt về hiệu suất.
+
+> Solana quy định các giới hạn bộ nhớ nghiêm ngặt: 4KB stack frames cho mỗi cuộc gọi hàm và 32KB tổng không gian heap cho mỗi lần thực thi chương trình.
+
+### Lợi thế của Zero-Allocation
+
+Đột phá hiệu suất chính của Pinocchio đến từ việc sử dụng các tham chiếu thay vì cấp phát heap cho mọi thứ.
+
+Cách tiếp cận này tận dụng một hiểu biết quan trọng: **SVM đã tải tất cả các đầu vào chương trình của bạn vào bộ nhớ**, vì vậy việc sao chép dữ liệu đó vào các cấp phát heap mới là lãng phí hoàn toàn.
+
+Cấp phát heap không phải là tệ về bản chất, nhưng trên Solana thì nó đắt đỏ và phức tạp vì mỗi lần cấp phát tiêu tốn các đơn vị tính toán quý giá: mỗi lần cấp phát phân mảnh không gian heap hạn chế và các thao tác dọn dẹp tiêu tốn thêm các đơn vị tính toán.
+
+### Các kỹ thuật Zero-Allocation
+
+1. Các cấu trúc dữ liệu dựa trên tham chiếu - Chuyển đổi dữ liệu sở hữu thành tham chiếu mượn:
+    ```rust
+    // HEAP ALLOCATION:
+    struct AccountInfo {
+        key: Pubkey,        // Owned data - copied to heap
+        data: Vec<u8>,      // Vector - definitely heap allocated
+    }
+
+    // ZERO ALLOCATION:
+    struct AccountInfo<'a> {
+        key: &'a Pubkey,    // Reference - no allocation
+        data: &'a [u8],     // Slice reference - no allocation
+    }
+    ```
+
+2. Truy cập dữ liệu Zero-Copy - Truy cập dữ liệu tại chỗ mà không cần giải tuần tự hóa:
+    ```rust
+    // Instead of deserializing, access data in-place:
+    pub fn process_transfer(accounts: &[u8], instruction_data: &[u8]) {
+        // Parse accounts directly from byte slice - NO HEAP ALLOCATION
+        let source_account = &accounts[0..36];  // Just slice references
+        let dest_account = &accounts[36..72];
+        
+        // Access fields through pointer arithmetic - NO ALLOCATION
+        let amount = u64::from_le_bytes(instruction_data[0..8].try_into().unwrap());
+    }
+    ```
+
+3. Các ràng buộc No-Std - Ngăn chặn việc sử dụng heap không mong muốn tại thời điểm biên dịch:
+    ```rust
+    // Enforces no-std to prevents accidental heap usage:
+    #![no_std]
+    ```
+
+### Bộ phân phối bộ nhớ của Pinocchio
+
+Nếu bạn muốn đảm bảo rằng bạn không cấp phát bất kỳ heap nào, Pinocchio cung cấp một macro chuyên dụng để đảm bảo điều này xảy ra: `no_allocator!()`
+
+> Nếu không được thiết lập, Pinocchio sẽ sử dụng `default_allocator!()` cho các chương trình yêu cầu các thao tác heap truyền thống.
+
+Ngoài điều này ra, bạn luôn có thể viết một bộ phân phối heap tốt hơn biết cách dọn dẹp chính nó sau. Nếu bạn quan tâm đến cách tiếp cận này, [đây là một ví dụ](https://github.com/solana-labs/solana-program-library/blob/master/examples/rust/custom-heap/src/entrypoint.rs).
