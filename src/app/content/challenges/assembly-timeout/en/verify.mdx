@@ -4,9 +4,9 @@ import { Requirement } from "../../../../components/Challenges/Requirement";
 
 <ChallengeTitle>sBPF Assembly Timeout</ChallengeTitle>
 
-Now that you should starting to be comfortable writing Assembly, instead of using the `sol_get_clock_sysvar` try achieving the same goal by passing in the `Clock` account.
+Now that you are starting to feel comfortable writing Assembly, instead of using the `sol_get_clock_sysvar` try achieving the same goal by passing in the `Clock` account.
 
-Create a program only has one instruction. It must:
+Create a program that only has one instruction. It must:
 - Take in the `Clock` account (of size 40).
 - Take in a u64 (8-byte) slot in instruction data.
 - Use the first 8-bytes of the `Clock` account to grab the current slot.

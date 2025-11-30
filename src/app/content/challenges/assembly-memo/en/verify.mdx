@@ -4,7 +4,7 @@ import { Requirement } from "../../../../components/Challenges/Requirement";
 
 <ChallengeTitle>sBPF Assembly Memo</ChallengeTitle>
 
-Create a program only has one instruction. It must:
+Create a program that only has one instruction. It must:
 - Should fail if the instruction data contains any accounts (this can be done by setting `r0` to the number of accounts)
 - Set `r2` to the length of the instruction data, and `r1` to the offset of the instruction data, 
 - Invoke the `sol_log_` syscall.
