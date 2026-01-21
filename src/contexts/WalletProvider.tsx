@@ -5,8 +5,13 @@ import {
   WalletProvider,
 } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
-import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
-import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
+
+import {
+  PhantomWalletAdapter,
+  SolflareWalletAdapter,
+  BackpackWalletAdapter,
+} from "@solana/wallet-adapter-wallets";
+
 import { useMemo } from "react";
 
 import "@solana/wallet-adapter-react-ui/styles.css";
@@ -21,17 +26,21 @@ export default function SolanaWalletProvider({
   if (!rpcEndpoint) {
     throw new Error("NEXT_PUBLIC_MAINNET_RPC_ENDPOINT is not set");
   }
-  
+
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
+      new BackpackWalletAdapter(),
     ],
     []
   );
 
   return (
-    <ConnectionProvider endpoint={rpcEndpoint} config={{ commitment: "processed", httpAgent: false }}>
+    <ConnectionProvider
+      endpoint={rpcEndpoint}
+      config={{ commitment: "processed", httpAgent: false }}
+    >
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>{children}</WalletModalProvider>
       </WalletProvider>
