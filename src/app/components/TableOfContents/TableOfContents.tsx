@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "motion/react";
 import { Icon, CrosshairCorners } from "@blueshift-gg/ui-components";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { anticipate } from "motion";
 import classNames from "classnames";
 import { useTranslations } from "next-intl";
@@ -42,6 +42,7 @@ export default function TableOfContents() {
       subsections: { id: string; text: string }[];
     }[]
   >([]);
+  const isManualScrollRef = useRef(false);
   const t = useTranslations();
   const pathname = usePathname();
   const githubUrl = getGithubSourceUrl(pathname);
@@ -94,17 +95,41 @@ export default function TableOfContents() {
     }
 
     // Create intersection observer for scroll spy
+    let timeoutId: NodeJS.Timeout;
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id);
-          }
+        if (isManualScrollRef.current) return;
+
+        const visibleEntries = entries.filter((entry) => entry.isIntersecting);
+        if (visibleEntries.length === 0) return;
+
+        // Sort by position from top of viewport, prioritizing elements closer to top
+        const sortedEntries = visibleEntries.sort((a, b) => {
+          const rectA = a.boundingClientRect;
+          const rectB = b.boundingClientRect;
+          const viewportCenter = window.innerHeight / 2;
+          const distanceA = Math.abs(rectA.top - viewportCenter);
+          const distanceB = Math.abs(rectB.top - viewportCenter);
+
+          if (rectA.top < viewportCenter && rectB.top >= viewportCenter)
+            return -1;
+          if (rectB.top < viewportCenter && rectA.top >= viewportCenter)
+            return 1;
+
+          return distanceA - distanceB;
         });
+
+        const topEntry = sortedEntries[0];
+        if (topEntry) {
+          clearTimeout(timeoutId);
+          timeoutId = setTimeout(() => {
+            setActiveSection(topEntry.target.id);
+          }, 50);
+        }
       },
       {
-        rootMargin: "-50% 0px -50% 0px",
-        threshold: 0,
+        rootMargin: "-20% 0px -60% 0px",
+        threshold: [0, 0.1, 0.5, 1],
       }
     );
 
@@ -113,6 +138,7 @@ export default function TableOfContents() {
     allHeadings.forEach((heading) => observer.observe(heading));
 
     return () => {
+      clearTimeout(timeoutId);
       allHeadings.forEach((heading) => observer.unobserve(heading));
     };
   }, []);
@@ -162,10 +188,21 @@ export default function TableOfContents() {
                   href={`#${section.id}`}
                   onClick={(e) => {
                     e.preventDefault();
+                    isManualScrollRef.current = true;
                     setActiveSection(section.id);
-                    document
-                      .getElementById(section.id)
-                      ?.scrollIntoView({ behavior: "smooth" });
+                    if (section.subsections.length > 0) {
+                      setExpandedOverrides((prev) => ({
+                        ...prev,
+                        [section.id]: true,
+                      }));
+                    }
+                    const targetElement = document.getElementById(section.id);
+                    if (targetElement) {
+                      targetElement.scrollIntoView({ behavior: "smooth" });
+                    }
+                    setTimeout(() => {
+                      isManualScrollRef.current = false;
+                    }, 1000);
                   }}
                   className={`font-mono relative text-sm font-medium text-shade-primary transition hover:text-shade-primary flex items-center`}
                 >
@@ -239,10 +276,14 @@ export default function TableOfContents() {
                               href={`#${subsection.id}`}
                               onClick={(e) => {
                                 e.preventDefault();
+                                isManualScrollRef.current = true;
                                 setActiveSection(subsection.id);
                                 document
                                   .getElementById(subsection.id)
                                   ?.scrollIntoView({ behavior: "smooth" });
+                                setTimeout(() => {
+                                  isManualScrollRef.current = false;
+                                }, 1000);
                               }}
                               className={`font-mono relative flex font-medium text-shade-tertiary text-xs transition hover:text-shade-primary`}
                             >
@@ -269,7 +310,7 @@ export default function TableOfContents() {
           })}
         </div>
       </div>
-      {githubUrl ? (
+      {githubUrl ?
         <a
           href={githubUrl}
           target="_blank"
@@ -281,7 +322,7 @@ export default function TableOfContents() {
             {t("contents.view_source")}
           </span>
         </a>
-      ) : null}
+      : null}
     </motion.div>
   );
 }
