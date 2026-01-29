@@ -246,28 +246,6 @@
         "advanced-functionalities": "Advanced Functionalities",
         "conclusion": "Conclusion"
       }
-    },
-    "introduction-to-low-level-solana": {
-      "title": "Introduction to Low-Level Solana",
-      "description": "Write Solana programs with zero crates. Just you, raw Rust, and the eBPF instruction set. Understand what Anchor actually does for you by doing it yourself.",
-      "lessons": {
-        "low-level-101": "Low-level 101",
-        "entrypoint": "Entrypoint"
-      }
-    },
-    "quantum-vault": {
-      "title": "Quantum Vault",
-      "description": "Build a vault that quantum computers can't crack. Implement post-quantum signature schemes on Solana. Your assets, protected from future threats.",
-      "lessons": {
-        "introduction-to-quantum-vault": "Introduction to Quantum Vault"
-      }
-    },
-    "research-crateless-program": {
-      "title": "Research: Crateless Program",
-      "description": "Build a Solana program with literally zero dependencies. Not even solana-program. Just raw eBPF and manual memory management. For the truly curious.",
-      "lessons": {
-        "lesson": "Byte by Byte: The Anatomy of a Crateless Program"
-      }
     }
   }
 }
